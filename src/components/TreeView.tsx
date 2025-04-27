@@ -25,55 +25,8 @@ const TreeView = ({
     {},
   );
 
-  // Default sample data if no nodes are provided
-  const defaultNodes: TreeNode[] = [
-    {
-      id: "1",
-      title: "Home",
-      description: "Main landing page",
-      color: "#ffcc80",
-      children: [
-        {
-          id: "2",
-          title: "About Us",
-          description: "Company information",
-          color: "#80deea",
-          children: [],
-        },
-        {
-          id: "3",
-          title: "Services",
-          description: "What we offer",
-          color: "#a5d6a7",
-          children: [
-            {
-              id: "4",
-              title: "Service 1",
-              description: "First service details",
-              color: "#ce93d8",
-              children: [],
-            },
-            {
-              id: "5",
-              title: "Service 2",
-              description: "Second service details",
-              color: "#ef9a9a",
-              children: [],
-            },
-          ],
-        },
-        {
-          id: "6",
-          title: "Contact",
-          description: "Get in touch",
-          color: "#fff59d",
-          children: [],
-        },
-      ],
-    },
-  ];
-
-  const displayNodes = nodes.length > 0 ? nodes : defaultNodes;
+  // Use empty array if no nodes are provided
+  const displayNodes = nodes || [];
 
   const toggleNode = (nodeId: string) => {
     setExpandedNodes((prev) => ({

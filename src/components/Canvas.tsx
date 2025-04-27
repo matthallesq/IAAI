@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import PostItNote from "./PostItNote";
+import Note from "./Note";
 
 interface Position {
   x: number;
@@ -60,10 +60,7 @@ const Canvas: React.FC<CanvasProps> = ({
   }, [notes]);
 
   useEffect(() => {
-    // Only update if the connections array reference has changed and the content is different
-    if (JSON.stringify(canvasConnections) !== JSON.stringify(connections)) {
-      setCanvasConnections(connections);
-    }
+    setCanvasConnections(connections);
   }, [connections]);
 
   const handleCanvasClick = (e: React.MouseEvent) => {
@@ -96,7 +93,7 @@ const Canvas: React.FC<CanvasProps> = ({
     ];
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
 
-    const newNote: PostItNoteData = {
+    const newNote: NoteData = {
       id: `note-${Date.now()}`,
       title: "Untitled Page",
       description: "Add page description here",
@@ -336,7 +333,7 @@ const Canvas: React.FC<CanvasProps> = ({
 
       {/* Render all post-it notes */}
       {canvasNotes.map((note) => (
-        <PostItNote
+        <Note
           key={note.id}
           id={note.id}
           title={note.title}
