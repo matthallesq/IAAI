@@ -139,9 +139,7 @@ const Canvas: React.FC<CanvasProps> = ({
     content: { title: string; description: string },
   ) => {
     const updatedNotes = canvasNotes.map((note) =>
-      note.id === id
-        ? { ...note, title: content.title, description: content.description }
-        : note,
+      note.id === id ? { ...note, title: content.title } : note,
     );
     setCanvasNotes(updatedNotes);
     onNotesChange(updatedNotes);

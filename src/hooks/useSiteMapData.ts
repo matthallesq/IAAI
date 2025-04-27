@@ -61,7 +61,7 @@ export const useSiteMapData = () => {
   const [connections, setConnections] = useState<Connection[]>([]);
   const [isImporting, setIsImporting] = useState(false);
 
-  const handleAddNote = () => {
+  const handleAddNote = (parentId?: string) => {
     const newNote: PostItNote = {
       id: Date.now().toString(),
       title: "New Page",
@@ -69,6 +69,7 @@ export const useSiteMapData = () => {
       color: getRandomColor(),
       position: { x: 400, y: 200 },
       zIndex: 1,
+      parentId,
     };
 
     setNotes([...notes, newNote]);

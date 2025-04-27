@@ -5,6 +5,7 @@ import Canvas from "./Canvas";
 import TreeView from "./TreeView";
 import TableView from "./TableView";
 import Toolbar from "./Toolbar";
+import MindMapView from "./MindMapView";
 import { motion } from "framer-motion";
 import CanvasWithAddNoteStoryboard from "../tempobook/storyboards/ce7e2b6e-b0c9-428d-9ed9-d095a6dd689b";
 import { useSiteMapData } from "@/hooks/useSiteMapData";
@@ -52,7 +53,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            Post-it Note Site Mapping Tool
+            IAAI
           </motion.h1>
           <div className="flex space-x-2">
             <Button
@@ -69,7 +70,6 @@ export default function Home() {
           </div>
         </div>
       </header>
-
       <main className="flex-1 w-full p-2 overflow-hidden">
         <Toolbar
           onAddNote={handleAddNote}
@@ -107,13 +107,26 @@ export default function Home() {
             <TabsContent value="table" className="h-[calc(100%-40px)]">
               <TableView nodes={treeNodes} />
             </TabsContent>
+            <TabsContent value="mindmap" className="h-[calc(100%-40px)]">
+              <MindMapView
+                nodes={treeNodes}
+                onNodeClick={(nodeId) => {
+                  // Find the note with this ID and focus on it
+                  const note = notes.find((n) => n.id === nodeId);
+                  if (note) {
+                    setActiveView("canvas");
+                    // You could add more functionality here to focus on the specific note
+                  }
+                }}
+                onAddChildNode={handleAddNote}
+              />
+            </TabsContent>
           </Tabs>
         </div>
       </main>
-
       <footer className="bg-white p-2 shadow-inner">
         <div className="w-full text-center text-gray-500 text-sm">
-          Post-it Note Site Mapping Tool © {new Date().getFullYear()}
+          AIIA © {new Date().getFullYear()}
         </div>
       </footer>
     </div>

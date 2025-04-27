@@ -154,18 +154,12 @@ const Note: React.FC<NoteProps> = ({
         </div>
       </div>
 
-      <div className="p-2 flex-1 flex flex-col overflow-hidden">
+      <div className="p-10 flex-0 flex flex-col overflow-hidden">
         <Input
           value={noteTitle}
           onChange={handleTitleChange}
-          className="mb-2 font-medium border-none p-0 h-auto text-sm focus-visible:ring-0"
+          className="font-large border-none p-1 h-auto text-2xl focus-visible:ring-0 w-full max-w-none"
           placeholder="Page Title"
-        />
-        <Textarea
-          value={noteDescription}
-          onChange={handleDescriptionChange}
-          className="flex-1 resize-none border-none p-0 text-xs focus-visible:ring-0"
-          placeholder="Page Description"
         />
       </div>
     </Card>
