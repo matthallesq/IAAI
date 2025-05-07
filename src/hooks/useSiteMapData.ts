@@ -1,178 +1,163 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { v4 as uuidv4 } from "uuid";
 
-interface Position {
-  x: number;
-  y: number;
-}
-
-export interface PostItNote {
+export interface Note {
   id: string;
   title: string;
-  description: string;
-  color: string;
-  position: Position;
-  zIndex: number;
-  parentId?: string;
+  content: string;
+  x: number;
+  y: number;
+  color?: string;
+  url?: string;
 }
 
 export interface Connection {
-  from: string;
-  to: string;
+  source: string;
+  target: string;
 }
 
 export interface TreeNode {
   id: string;
   title: string;
-  description?: string;
-  color?: string;
-  children: TreeNode[];
+  content: string;
+  url?: string;
+  children?: TreeNode[];
 }
 
-export const useSiteMapData = () => {
-  const [notes, setNotes] = useState<PostItNote[]>([
-    {
-      id: "1",
-      title: "Home Page",
-      description: "Main landing page for the website",
-      color: "#ffcc80",
-      position: { x: 400, y: 100 },
-      zIndex: 1,
-    },
-    {
-      id: "2",
-      title: "About Us",
-      description: "Information about the company",
-      color: "#80deea",
-      position: { x: 200, y: 300 },
-      zIndex: 1,
-      parentId: "1",
-    },
-    {
-      id: "3",
-      title: "Services",
-      description: "List of services offered",
-      color: "#a5d6a7",
-      position: { x: 600, y: 300 },
-      zIndex: 1,
-      parentId: "1",
-    },
-  ]);
-
+export default function useSiteMapData() {
+  const [notes, setNotes] = useState<Note[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [isImporting, setIsImporting] = useState(false);
+  const [treeNodes, setTreeNodes] = useState<TreeNode[]>([]);
 
-  const handleAddNote = (parentId?: string) => {
-    const newNote: PostItNote = {
-      id: Date.now().toString(),
-      title: "New Page",
-      description: "Add description here",
-      color: getRandomColor(),
-      position: { x: 400, y: 200 },
-      zIndex: 1,
-      parentId,
+  // Generate tree nodes from notes and connections
+  useEffect(() => {
+    // Simple algorithm to convert flat notes and connections to a tree structure
+    const generateTree = () => {
+      if (notes.length === 0) return [];
+
+      // Create a map of all notes by ID for quick lookup
+      const notesMap = notes.reduce(
+        (acc, note) => {
+          acc[note.id] = { ...note, children: [] };
+          return acc;
+        },
+        {} as Record<string, TreeNode>,
+      );
+
+      // Track which nodes are children (have parents)
+      const childNodes = new Set<string>();
+
+      // Connect children to parents based on connections
+      connections.forEach(({ source, target }) => {
+        if (notesMap[source] && notesMap[target]) {
+          notesMap[source].children = notesMap[source].children || [];
+          notesMap[source].children.push(notesMap[target]);
+          childNodes.add(target);
+        }
+      });
+
+      // Return only root nodes (those without parents)
+      return Object.values(notesMap).filter((node) => !childNodes.has(node.id));
     };
 
-    setNotes([...notes, newNote]);
+    setTreeNodes(generateTree());
+  }, [notes, connections]);
+
+  const handleAddNote = () => {
+    const newNote: Note = {
+      id: uuidv4(),
+      title: "New Page",
+      content: "Add description here",
+      x: Math.random() * 500,
+      y: Math.random() * 300,
+      color: `hsl(${Math.random() * 360}, 70%, 80%)`,
+    };
+
+    setNotes((prev) => [...prev, newNote]);
   };
 
-  const handleImportUrl = (url: string) => {
+  const handleImportUrl = async (url: string) => {
     setIsImporting(true);
-    // Simulate URL import with timeout
-    setTimeout(() => {
-      const importedNotes: PostItNote[] = [
+
+    try {
+      // Simulate URL import with a timeout
+      // In a real implementation, this would call an API to scrape the website
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Create a sample site structure based on the URL
+      const domain = new URL(url).hostname;
+
+      const newNotes: Note[] = [
         {
-          id: "imported-1",
-          title: "Imported Home",
-          description: `Imported from ${url}`,
-          color: "#ffcc80",
-          position: { x: 400, y: 100 },
-          zIndex: 1,
+          id: uuidv4(),
+          title: domain,
+          content: "Homepage",
+          x: 400,
+          y: 100,
+          url,
+          color: `hsl(${Math.random() * 360}, 70%, 80%)`,
         },
         {
-          id: "imported-2",
-          title: "Imported About",
-          description: "About page from import",
-          color: "#80deea",
-          position: { x: 200, y: 300 },
-          zIndex: 1,
-          parentId: "imported-1",
+          id: uuidv4(),
+          title: "About",
+          content: "About page",
+          x: 200,
+          y: 300,
+          url: `${url}/about`,
+          color: `hsl(${Math.random() * 360}, 70%, 80%)`,
         },
         {
-          id: "imported-3",
-          title: "Imported Contact",
-          description: "Contact page from import",
-          color: "#a5d6a7",
-          position: { x: 600, y: 300 },
-          zIndex: 1,
-          parentId: "imported-1",
+          id: uuidv4(),
+          title: "Contact",
+          content: "Contact page",
+          x: 400,
+          y: 300,
+          url: `${url}/contact`,
+          color: `hsl(${Math.random() * 360}, 70%, 80%)`,
+        },
+        {
+          id: uuidv4(),
+          title: "Products",
+          content: "Products page",
+          x: 600,
+          y: 300,
+          url: `${url}/products`,
+          color: `hsl(${Math.random() * 360}, 70%, 80%)`,
         },
       ];
 
-      setNotes(importedNotes);
+      const newConnections: Connection[] = [
+        { source: newNotes[0].id, target: newNotes[1].id },
+        { source: newNotes[0].id, target: newNotes[2].id },
+        { source: newNotes[0].id, target: newNotes[3].id },
+      ];
+
+      setNotes((prev) => [...prev, ...newNotes]);
+      setConnections((prev) => [...prev, ...newConnections]);
+    } catch (error) {
+      console.error("Error importing URL:", error);
+    } finally {
       setIsImporting(false);
-    }, 2000);
+    }
   };
 
   const handleUpdateNote = (updatedNote: Note) => {
-    setNotes(
-      notes.map((note) => (note.id === updatedNote.id ? updatedNote : note)),
+    setNotes((prev) =>
+      prev.map((note) => (note.id === updatedNote.id ? updatedNote : note)),
     );
   };
 
-  const handleDeleteNote = (id: string) => {
-    setNotes(notes.filter((note) => note.id !== id));
+  const handleDeleteNote = (noteId: string) => {
+    setNotes((prev) => prev.filter((note) => note.id !== noteId));
+    setConnections((prev) =>
+      prev.filter((conn) => conn.source !== noteId && conn.target !== noteId),
+    );
   };
-
-  const getRandomColor = () => {
-    const colors = [
-      "#ffcc80",
-      "#80deea",
-      "#a5d6a7",
-      "#ef9a9a",
-      "#ce93d8",
-      "#b39ddb",
-      "#9fa8da",
-    ];
-    return colors[Math.floor(Math.random() * colors.length)];
-  };
-
-  // Convert PostItNotes to TreeNodes for TreeView and TableView
-  const convertNotesToTreeNodes = (): TreeNode[] => {
-    // First, create a map of all notes
-    const notesMap = new Map<string, PostItNote>();
-    notes.forEach((note) => {
-      notesMap.set(note.id, note);
-    });
-
-    // Find root nodes (notes without a parent)
-    const rootNotes = notes.filter((note) => !note.parentId);
-
-    // Recursive function to build the tree
-    const buildTree = (note: PostItNote): TreeNode => {
-      const children = notes
-        .filter((n) => n.parentId === note.id)
-        .map((childNote) => buildTree(childNote));
-
-      return {
-        id: note.id,
-        title: note.title,
-        description: note.description,
-        color: note.color,
-        children,
-      };
-    };
-
-    // Build tree starting from root nodes
-    return rootNotes.map((rootNote) => buildTree(rootNote));
-  };
-
-  const treeNodes = convertNotesToTreeNodes();
 
   return {
     notes,
-    setNotes,
     connections,
-    setConnections,
     isImporting,
     treeNodes,
     handleAddNote,
@@ -180,4 +165,4 @@ export const useSiteMapData = () => {
     handleUpdateNote,
     handleDeleteNote,
   };
-};
+}

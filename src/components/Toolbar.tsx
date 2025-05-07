@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { PlusCircle, Download, GitBranch, Globe, Loader2 } from "lucide-react";
+import ViewLinks from "@/components/ViewLinks";
 import {
   Tooltip,
   TooltipContent,
@@ -33,6 +34,8 @@ interface ToolbarProps {
   onExport?: (format: string) => void;
   isTreeView?: boolean;
   isLoading?: boolean;
+  activeView?: string;
+  onViewChange?: (view: string) => void;
 }
 
 const Toolbar = ({
@@ -42,6 +45,8 @@ const Toolbar = ({
   onExport = () => {},
   isTreeView = false,
   isLoading = false,
+  activeView = "canvas",
+  onViewChange = () => {},
 }: ToolbarProps) => {
   const [url, setUrl] = useState("");
   const [exportFormat, setExportFormat] = useState("png");
@@ -60,7 +65,7 @@ const Toolbar = ({
   };
 
   return (
-    <div className="w-full h-16 px-4 bg-background border-b flex items-center justify-between">
+    <div className="flex items-center justify-between">
       <div className="flex items-center space-x-2">
         <TooltipProvider>
           <Tooltip>
@@ -119,20 +124,7 @@ const Toolbar = ({
           </DialogContent>
         </Dialog>
 
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button onClick={onToggleView} variant="outline" size="icon">
-                <GitBranch className="h-5 w-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>
-                {isTreeView ? "Switch to Canvas View" : "Switch to Tree View"}
-              </p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <ViewLinks activeView={activeView} onViewChange={onViewChange} />
       </div>
 
       <div className="flex items-center space-x-2">

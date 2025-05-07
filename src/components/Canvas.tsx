@@ -1,248 +1,42 @@
 import React, { useState, useRef, useEffect } from "react";
-import { motion } from "framer-motion";
-import Note from "./Note";
-
-interface Position {
-  x: number;
-  y: number;
-}
-
-interface Connection {
-  from: string;
-  to: string;
-}
-
-interface PostItNoteData {
-  id: string;
-  title: string;
-  description: string;
-  position: Position;
-  color: string;
-  zIndex: number;
-  parentId?: string;
-}
+import { PostItNote as Note, Connection } from "@/hooks/useSiteMapData";
+import PostItNote from "./PostItNote";
 
 interface CanvasProps {
-  notes?: PostItNoteData[];
-  connections?: Connection[];
-  onNotesChange?: (notes: PostItNoteData[]) => void;
+  notes: Note[];
+  connections: Connection[];
+  onNotesChange?: (notes: Note[]) => void;
   onConnectionsChange?: (connections: Connection[]) => void;
-  isTreeView?: boolean;
-  onUpdateNote?: (note: PostItNoteData) => void;
+  onUpdateNote?: (note: Note) => void;
   onDeleteNote?: (id: string) => void;
 }
 
 const Canvas: React.FC<CanvasProps> = ({
   notes = [],
   connections = [],
-  onNotesChange = () => {},
-  onConnectionsChange = () => {},
-  isTreeView = false,
-  onUpdateNote = () => {},
-  onDeleteNote = () => {},
+  onNotesChange,
+  onConnectionsChange,
+  onUpdateNote,
+  onDeleteNote,
 }) => {
-  const [canvasNotes, setCanvasNotes] = useState<PostItNoteData[]>(notes);
-  const [canvasConnections, setCanvasConnections] = useState<Connection[]>([]);
   const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState<Position>({ x: 0, y: 0 });
-  const [selectedNote, setSelectedNote] = useState<string | null>(null);
-  const [connectingFrom, setConnectingFrom] = useState<string | null>(null);
+  const [draggedNoteId, setDraggedNoteId] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
-
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [startPanPosition, setStartPanPosition] = useState({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  // Update local state when props change
-  useEffect(() => {
-    // Only update if the notes array reference has changed and the content is different
-    if (JSON.stringify(canvasNotes) !== JSON.stringify(notes)) {
-      setCanvasNotes(notes);
-    }
-  }, [notes]);
+  // Handle note dragging
+  const handleNoteMouseDown = (e: React.MouseEvent, noteId: string) => {
+    e.stopPropagation();
+    setIsDragging(true);
+    setDraggedNoteId(noteId);
 
-  useEffect(() => {
-    setCanvasConnections(connections);
-  }, [connections]);
-
-  const handleCanvasClick = (e: React.MouseEvent) => {
-    // Deselect when clicking on empty canvas
-    if (e.target === canvasRef.current) {
-      setSelectedNote(null);
-      setConnectingFrom(null);
-    }
-  };
-
-  // Add a new post-it note to the canvas
-  const addNote = () => {
-    // Generate a random position within the visible canvas area
-    const canvasRect = canvasRef.current?.getBoundingClientRect();
-    const randomX = canvasRect
-      ? Math.random() * (canvasRect.width - 200) + 50
-      : 100;
-    const randomY = canvasRect
-      ? Math.random() * (canvasRect.height - 200) + 50
-      : 100;
-
-    // Generate a random color from a predefined set of post-it note colors
-    const colors = [
-      "#FFEB3B",
-      "#FFC107",
-      "#FF9800",
-      "#4CAF50",
-      "#2196F3",
-      "#9C27B0",
-    ];
-    const randomColor = colors[Math.floor(Math.random() * colors.length)];
-
-    const newNote: NoteData = {
-      id: `note-${Date.now()}`,
-      title: "Untitled Page",
-      description: "Add page description here",
-      color: randomColor,
-      position: { x: randomX, y: randomY },
-      zIndex: 1,
-    };
-
-    const updatedNotes = [...canvasNotes, newNote];
-    setCanvasNotes(updatedNotes);
-    setSelectedNote(newNote.id); // Select the newly created note
-    onNotesChange(updatedNotes);
-  };
-
-  const handleNoteMove = (id: string, position: Position) => {
-    const updatedNotes = canvasNotes.map((note) =>
-      note.id === id ? { ...note, position } : note,
-    );
-    setCanvasNotes(updatedNotes);
-    onNotesChange(updatedNotes);
-
-    const updatedNote = updatedNotes.find((note) => note.id === id);
-    if (updatedNote) {
-      onUpdateNote(updatedNote);
-    }
-  };
-
-  const handleNoteSelect = (id: string) => {
-    setSelectedNote(id);
-
-    // If we're in connecting mode, create a connection
-    if (connectingFrom && connectingFrom !== id) {
-      const newConnection = { from: connectingFrom, to: id };
-      const updatedConnections = [...canvasConnections, newConnection];
-      setCanvasConnections(updatedConnections);
-      onConnectionsChange(updatedConnections);
-      setConnectingFrom(null);
-    }
-  };
-
-  const handleNoteEdit = (
-    id: string,
-    content: { title: string; description: string },
-  ) => {
-    const updatedNotes = canvasNotes.map((note) =>
-      note.id === id ? { ...note, title: content.title } : note,
-    );
-    setCanvasNotes(updatedNotes);
-    onNotesChange(updatedNotes);
-
-    const updatedNote = updatedNotes.find((note) => note.id === id);
-    if (updatedNote) {
-      onUpdateNote(updatedNote);
-    }
-  };
-
-  const handleNoteDelete = (id: string) => {
-    const updatedNotes = canvasNotes.filter((note) => note.id !== id);
-    const updatedConnections = canvasConnections.filter(
-      (conn) => conn.from !== id && conn.to !== id,
-    );
-
-    setCanvasNotes(updatedNotes);
-    setCanvasConnections(updatedConnections);
-    onNotesChange(updatedNotes);
-    onConnectionsChange(updatedConnections);
-    onDeleteNote(id);
-
-    if (selectedNote === id) {
-      setSelectedNote(null);
-    }
-    if (connectingFrom === id) {
-      setConnectingFrom(null);
-    }
-  };
-
-  const startConnection = (id: string) => {
-    setConnectingFrom(id);
-  };
-
-  const renderConnections = () => {
-    return canvasConnections.map((connection, index) => {
-      const fromNote = canvasNotes.find((note) => note.id === connection.from);
-      const toNote = canvasNotes.find((note) => note.id === connection.to);
-
-      if (!fromNote || !toNote) return null;
-
-      const fromX = fromNote.position.x + 100; // Assuming note width is 200px
-      const fromY = fromNote.position.y + 100; // Assuming note height is 200px
-      const toX = toNote.position.x + 100;
-      const toY = toNote.position.y + 100;
-
-      return (
-        <svg
-          key={`connection-${index}`}
-          className="absolute top-0 left-0 w-full h-full pointer-events-none"
-        >
-          <line
-            x1={fromX}
-            y1={fromY}
-            x2={toX}
-            y2={toY}
-            stroke="#333"
-            strokeWidth="2"
-            strokeDasharray={connectingFrom ? "5,5" : "none"}
-          />
-          {/* Arrow head */}
-          <polygon
-            points={`${toX},${toY} ${toX - 10},${toY - 5} ${toX - 10},${toY + 5}`}
-            fill="#333"
-            transform={`rotate(${Math.atan2(toY - fromY, toX - fromX) * (180 / Math.PI)}, ${toX}, ${toY})`}
-          />
-        </svg>
-      );
-    });
-  };
-
-  // Render temporary connection line when creating a new connection
-  const renderTempConnection = () => {
-    if (!connectingFrom) return null;
-
-    const fromNote = canvasNotes.find((note) => note.id === connectingFrom);
-    if (!fromNote) return null;
-
-    const fromX = fromNote.position.x + 100;
-    const fromY = fromNote.position.y + 100;
-
-    // Use mouse position for the end point
-    const toX = dragOffset.x;
-    const toY = dragOffset.y;
-
-    return (
-      <svg className="absolute top-0 left-0 w-full h-full pointer-events-none">
-        <line
-          x1={fromX}
-          y1={fromY}
-          x2={toX}
-          y2={toY}
-          stroke="#333"
-          strokeWidth="2"
-          strokeDasharray="5,5"
-        />
-      </svg>
-    );
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (canvasRef.current) {
-      const rect = canvasRef.current.getBoundingClientRect();
+    const note = notes.find((n) => n.id === noteId);
+    if (note) {
+      const rect = (e.target as HTMLElement).getBoundingClientRect();
       setDragOffset({
         x: e.clientX - rect.left,
         y: e.clientY - rect.top,
@@ -250,32 +44,70 @@ const Canvas: React.FC<CanvasProps> = ({
     }
   };
 
-  React.useEffect(() => {
-    // Remove the event listeners that reference undefined functions
-    // We'll implement proper panning functionality later if needed
-    if (isDragging) {
-      // Add any necessary event listeners here
-    } else {
-      // Remove any necessary event listeners here
+  // Handle canvas mouse down for panning
+  const handleCanvasMouseDown = (e: React.MouseEvent) => {
+    if (e.button === 0 && !isDragging) {
+      // Left mouse button
+      setIsPanning(true);
+      setStartPanPosition({ x: e.clientX, y: e.clientY });
+    }
+  };
+
+  // Handle mouse move for both dragging notes and panning
+  const handleMouseMove = (e: MouseEvent) => {
+    if (isDragging && draggedNoteId) {
+      const updatedNotes = notes.map((note) => {
+        if (note.id === draggedNoteId) {
+          // Calculate new position considering scale and canvas position
+          const newX = (e.clientX - dragOffset.x - position.x) / scale;
+          const newY = (e.clientY - dragOffset.y - position.y) / scale;
+
+          return {
+            ...note,
+            position: { x: newX, y: newY },
+          };
+        }
+        return note;
+      });
+
+      onNotesChange?.(updatedNotes);
+    } else if (isPanning) {
+      const dx = e.clientX - startPanPosition.x;
+      const dy = e.clientY - startPanPosition.y;
+
+      setPosition((prev) => ({
+        x: prev.x + dx,
+        y: prev.y + dy,
+      }));
+
+      setStartPanPosition({ x: e.clientX, y: e.clientY });
+    }
+  };
+
+  // Handle mouse up to stop dragging or panning
+  const handleMouseUp = () => {
+    if (isDragging && draggedNoteId) {
+      setIsDragging(false);
+      setDraggedNoteId(null);
     }
 
-    return () => {
-      // Clean up any event listeners here
-    };
-  }, [isDragging]);
+    if (isPanning) {
+      setIsPanning(false);
+    }
+  };
 
-  // Handle wheel zoom
+  // Handle zoom with mouse wheel
+  const handleWheel = (e: WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    const newScale = Math.max(0.5, Math.min(2, scale + delta));
+    setScale(newScale);
+  };
+
+  // Add and remove event listeners
   useEffect(() => {
-    const handleWheel = (e: WheelEvent) => {
-      if (e.ctrlKey) {
-        e.preventDefault();
-        const delta = e.deltaY * -0.01;
-        setScale((prevScale) => {
-          const newScale = Math.max(0.5, Math.min(2, prevScale + delta));
-          return newScale;
-        });
-      }
-    };
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
 
     const canvasElement = canvasRef.current;
     if (canvasElement) {
@@ -283,84 +115,121 @@ const Canvas: React.FC<CanvasProps> = ({
     }
 
     return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+
       if (canvasElement) {
         canvasElement.removeEventListener("wheel", handleWheel);
       }
     };
-  }, []);
+  }, [
+    isDragging,
+    draggedNoteId,
+    dragOffset,
+    isPanning,
+    startPanPosition,
+    scale,
+    position,
+    notes,
+  ]);
+
+  // Add a new note
+  const handleAddNote = () => {
+    const newNote: Note = {
+      id: `note-${Date.now()}`,
+      title: "New Note",
+      description: "Add description here",
+      color: "#ffcc80",
+      position: { x: 100, y: 100 },
+      zIndex: notes.length + 1,
+    };
+
+    onNotesChange?.([...notes, newNote]);
+  };
+
+  // Update a note
+  const handleUpdateNote = (updatedNote: Note) => {
+    if (onUpdateNote) {
+      onUpdateNote(updatedNote);
+    } else {
+      const updatedNotes = notes.map((note) =>
+        note.id === updatedNote.id ? updatedNote : note,
+      );
+      onNotesChange?.(updatedNotes);
+    }
+  };
+
+  // Delete a note
+  const handleDeleteNote = (id: string) => {
+    if (onDeleteNote) {
+      onDeleteNote(id);
+    } else {
+      const updatedNotes = notes.filter((note) => note.id !== id);
+      onNotesChange?.(updatedNotes);
+    }
+  };
 
   return (
-    <div
-      ref={canvasRef}
-      className="relative w-full h-full overflow-hidden bg-gray-100 border border-gray-300 rounded-md"
-      onClick={handleCanvasClick}
-      onMouseMove={handleMouseMove}
-    >
-      {/* Add Note Button */}
-      <div className="absolute top-4 right-4 z-10">
+    <div className="relative w-full h-full overflow-hidden bg-gray-50">
+      <div className="absolute top-2 right-2 z-10">
         <button
-          onClick={(e) => {
-            e.stopPropagation(); // Prevent canvas click handler from firing
-            addNote();
-          }}
-          className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md flex items-center gap-2 text-sm font-medium"
+          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-sm"
+          onClick={handleAddNote}
         >
-          <svg
-            width="15"
-            height="15"
-            viewBox="0 0 15 15"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M7.5 1C7.77614 1 8 1.22386 8 1.5V13.5C8 13.7761 7.77614 14 7.5 14C7.22386 14 7 13.7761 7 13.5V1.5C7 1.22386 7.22386 1 7.5 1Z"
-              fill="currentColor"
-            />
-            <path
-              d="M1.5 7C1.22386 7 1 7.22386 1 7.5C1 7.77614 1.22386 8 1.5 8H13.5C13.7761 8 14 7.77614 14 7.5C14 7.22386 13.7761 7 13.5 7H1.5Z"
-              fill="currentColor"
-            />
-          </svg>
           Add Note
         </button>
+        <div className="mt-2 flex gap-2">
+          <button
+            className="bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded-md text-sm"
+            onClick={() => setScale((prev) => Math.min(prev + 0.1, 2))}
+          >
+            +
+          </button>
+          <button
+            className="bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded-md text-sm"
+            onClick={() => setScale((prev) => Math.max(prev - 0.1, 0.5))}
+          >
+            -
+          </button>
+          <button
+            className="bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded-md text-sm"
+            onClick={() => {
+              setScale(1);
+              setPosition({ x: 0, y: 0 });
+            }}
+          >
+            Reset
+          </button>
+        </div>
       </div>
 
-      {/* Render connections between notes */}
-      {renderConnections()}
-      {renderTempConnection()}
+      <div
+        ref={canvasRef}
+        className="w-full h-full cursor-grab active:cursor-grabbing"
+        onMouseDown={handleCanvasMouseDown}
+        style={{ touchAction: "none" }}
+      >
+        <div
+          className="relative w-full h-full"
+          style={{
+            transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+            transformOrigin: "0 0",
+            transition: "transform 0.1s ease-out",
+          }}
+        >
+          {notes.map((note) => (
+            <PostItNote
+              key={note.id}
+              note={note}
+              onMouseDown={(e) => handleNoteMouseDown(e, note.id)}
+              onUpdate={handleUpdateNote}
+              onDelete={handleDeleteNote}
+            />
+          ))}
 
-      {/* Render all post-it notes */}
-      {canvasNotes.map((note) => (
-        <Note
-          key={note.id}
-          id={note.id}
-          title={note.title}
-          description={note.description}
-          position={note.position}
-          color={note.color}
-          zIndex={note.zIndex}
-          isSelected={selectedNote === note.id}
-          isConnecting={connectingFrom === note.id}
-          onMove={handleNoteMove}
-          onSelect={handleNoteSelect}
-          onContentChange={handleNoteEdit}
-          onDelete={handleNoteDelete}
-          onConnect={() => {}}
-          onStartConnection={startConnection}
-        />
-      ))}
-
-      {/* Canvas is empty state */}
-      {canvasNotes.length === 0 && (
-        <div className="flex items-center justify-center w-full h-full text-gray-500">
-          <div className="text-center">
-            <p className="text-xl">Your canvas is empty</p>
-            <p className="mt-2">
-              Add a new note from the toolbar to get started
-            </p>
-          </div>
+          {/* Connections would be rendered here */}
         </div>
-      )}
+      </div>
     </div>
   );
 };

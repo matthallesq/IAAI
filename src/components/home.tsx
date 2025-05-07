@@ -5,10 +5,9 @@ import Canvas from "./Canvas";
 import TreeView from "./TreeView";
 import TableView from "./TableView";
 import Toolbar from "./Toolbar";
-import MindMapView from "./MindMapView";
 import { motion } from "framer-motion";
 import CanvasWithAddNoteStoryboard from "../tempobook/storyboards/ce7e2b6e-b0c9-428d-9ed9-d095a6dd689b";
-import { useSiteMapData } from "@/hooks/useSiteMapData";
+import useSiteMapData from "@/hooks/useSiteMapData";
 
 export default function Home() {
   const {
@@ -47,52 +46,41 @@ export default function Home() {
     <div className="min-h-screen h-screen w-screen bg-gray-100 flex flex-col overflow-hidden">
       <header className="bg-white shadow-sm p-2">
         <div className="w-full flex justify-between items-center">
-          <motion.h1
-            className="text-2xl font-bold text-gray-800"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            IAAI
-          </motion.h1>
-          <div className="flex space-x-2">
-            <Button
-              variant="outline"
-              onClick={() =>
-                setActiveView(activeView === "canvas" ? "tree" : "canvas")
-              }
+          <div>
+            <img
+              src="https://images.unsplash.com/photo-1633409361618-c73427e4e206?w=150&q=80"
+              alt="IAAI Logo"
+              className="h-8"
+            />
+          </div>
+          <div className="flex items-center space-x-5">
+            <motion.h1
+              className="text-2xl font-bold text-gray-800"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
             >
-              {activeView === "canvas"
-                ? "Switch to Tree View"
-                : "Switch to Canvas View"}
-            </Button>
-            <Button onClick={() => handleExport("json")}>Export</Button>
+              IAAI
+            </motion.h1>
+            <Toolbar
+              onAddNote={handleAddNote}
+              onImportUrl={handleImportUrl}
+              isLoading={isImporting}
+              onExport={handleExport}
+              activeView={activeView}
+              onViewChange={setActiveView}
+            />
           </div>
         </div>
       </header>
-      <main className="flex-1 w-full p-2 overflow-hidden">
-        <Toolbar
-          onAddNote={handleAddNote}
-          onImportUrl={handleImportUrl}
-          isLoading={isImporting}
-          onExport={handleExport}
-          onToggleView={() =>
-            setActiveView(activeView === "canvas" ? "tree" : "canvas")
-          }
-          isTreeView={activeView === "tree"}
-        />
-
-        <div className="mt-2 bg-white rounded-lg shadow-md p-2 h-[calc(100vh-130px)]">
+      <main className="flex-0 w-full p-0 overflow-hidden">
+        <div className="mt-2 bg-white rounded-lg shadow-md p-2 h-[calc(100vh-10px)]">
           <Tabs
             value={activeView}
             onValueChange={setActiveView}
             className="w-full h-full"
           >
-            <TabsList className="grid w-full grid-cols-3 mb-2">
-              <TabsTrigger value="canvas">Canvas</TabsTrigger>
-              <TabsTrigger value="tree">Tree</TabsTrigger>
-              <TabsTrigger value="table">Table</TabsTrigger>
-            </TabsList>
+            {/* TabsList moved to header */}
             <TabsContent value="canvas" className="h-[calc(100%-40px)]">
               <CanvasWithAddNoteStoryboard
                 notes={notes}
@@ -106,20 +94,6 @@ export default function Home() {
             </TabsContent>
             <TabsContent value="table" className="h-[calc(100%-40px)]">
               <TableView nodes={treeNodes} />
-            </TabsContent>
-            <TabsContent value="mindmap" className="h-[calc(100%-40px)]">
-              <MindMapView
-                nodes={treeNodes}
-                onNodeClick={(nodeId) => {
-                  // Find the note with this ID and focus on it
-                  const note = notes.find((n) => n.id === nodeId);
-                  if (note) {
-                    setActiveView("canvas");
-                    // You could add more functionality here to focus on the specific note
-                  }
-                }}
-                onAddChildNode={handleAddNote}
-              />
             </TabsContent>
           </Tabs>
         </div>
